@@ -1,5 +1,5 @@
-pipeline {
-    agent any 
+ppipeline {
+    agent any
 
     environment {
         FRONTEND_IMAGE = "samiksha1195/frontend"
@@ -61,7 +61,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Containers') {
+       stage('Deploy Containers') {
             steps {
                 sh '''
                     docker rm -f backend-container || true
@@ -70,18 +70,17 @@ pipeline {
                     docker run -d \
                       --name backend-container \
                       --restart unless-stopped \
-                      -p 80:80 \
+                      -p 5000:5000 \
                       $BACKEND_IMAGE:$IMAGE_TAG
 
                     docker run -d \
                       --name frontend-container \
                       --restart unless-stopped \
-                      -p 8081:80 \
+                      -p 8085:80 \
                       $FRONTEND_IMAGE:$IMAGE_TAG
                 '''
             }
         }
-
         stage('Verify Containers') {
             steps {
                 sh '''
