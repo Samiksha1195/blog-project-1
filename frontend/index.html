@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html><head><title>My Blog</title></head>
+<body>
+  <h1>My Blogging Platform (v1)</h1>
+  <input id="t" placeholder="Title"><br>
+  <textarea id="c" placeholder="Content"></textarea><br>
+  <button onclick="add()">Publish</button>
+  <div id="posts"></div>
+<script>
+async function load(){
+  const r = await fetch('/api/posts'); const d = await r.json();
+  document.getElementById('posts').innerHTML =
+    d.map(p => `<h3>${p.title}</h3><p>${p.content}</p>`).join('');
+}
+async function add(){
+  await fetch('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title:t.value,content:c.value})});
+  load();
+}
+load();
+</script></body></html>

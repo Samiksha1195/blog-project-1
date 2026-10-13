@@ -1,0 +1,40 @@
+---
+- hosts: app
+  become: yes
+
+  tasks:
+
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install Docker Compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Deploy Frontend
+      community.docker.docker_container:
+        name: frontend
+        image: nginx:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "80:80"
+
+    - name: Deploy Backend
+      community.docker.docker_container:
+        name: backend
+        image: httpd:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "8081:80"

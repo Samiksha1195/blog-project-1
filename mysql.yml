@@ -1,0 +1,17 @@
+---
+- hosts: db
+  become: yes
+
+  tasks:
+
+  - name: Install MySQL Server
+    yum:
+      name: mariadb105-server
+      state: present
+
+  - name: Start MySQL
+    service:
+      name: mariadb
+      state: started
+      enabled: yes
+
