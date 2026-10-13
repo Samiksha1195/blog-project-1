@@ -9,7 +9,7 @@ pipeline {
         DOCKERHUB_USER = 'samiksha1195'
         FRONTEND_DIR = 'frontend'
         BACKEND_DIR = 'backend'
-        APP_HOST = '10-0-2-10'
+        APP_HOST = '10.0.2.10'
     }
 
     stages {
