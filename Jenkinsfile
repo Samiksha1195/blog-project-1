@@ -1,5 +1,5 @@
-pipeline {
-    agent any 
+ppipeline {
+    agent any
 
     environment {
         FRONTEND_IMAGE = "samiksha1195/frontend"
@@ -61,7 +61,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Containers') {
+       stage('Deploy Containers') {
             steps {
                 sh '''
                     docker rm -f backend-container || true
@@ -81,7 +81,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Verify Containers') {
             steps {
                 sh '''
