@@ -1,109 +1,91 @@
 pipeline {
-    agent any 
+    agent any
+
+    triggers {
+        pollSCM('H/2 * * * *')
+    }
 
     environment {
-        FRONTEND_IMAGE = "samiksha1195/frontend"
-        BACKEND_IMAGE  = "samiksha1195/backend"
-        IMAGE_TAG      = "latest"
+        DOCKERHUB_USER = 'samiksha1195'
+        FRONTEND_DIR = 'frontend'
+        BACKEND_DIR = 'backend'
+        APP_HOST = '10-0-2-10'
     }
 
     stages {
-
-        stage('Clone Repo') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                    checkout scm
             }
         }
 
-        stage('Build Frontend Image') {
+        stage('Build Images') {
             steps {
-                dir('frontend') {
+                sh '''
+                  docker build -t $DOCKERHUB_USER/frontend:latest "$FRONTEND_DIR"
+                  docker build -t $DOCKERHUB_USER/backend:latest "$BACKEND_DIR"
+                '''
+            }
+        }
+	
+
+        stage('Push Images') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-cred',
+                        usernameVariable: 'DH_USER',
+                        passwordVariable: 'DH_PASS'
+                    )
+                ]) {
                     sh '''
-                        docker build \
-                          -t $FRONTEND_IMAGE:$IMAGE_TAG .
+                      echo "$DH_PASS" | docker login \
+                        -u "$DH_USER" --password-stdin
+
+                      docker push $DOCKERHUB_USER/frontend:latest
+                      docker push $DOCKERHUB_USER/backend:latest
+
+                      docker logout
                     '''
                 }
             }
         }
 
-        stage('Build Backend Image') {
+        stage('Deploy') {
             steps {
-                dir('backend') {
+                sshagent(credentials: ['app-ssh-key']) {
                     sh '''
-                        docker build \
-                          -t $BACKEND_IMAGE:$IMAGE_TAG .
+                      ssh -o StrictHostKeyChecking=accept-new \
+                        ec2-user@$APP_HOST \
+                        'sudo docker pull samiksha1195/frontend:latest &&
+                         sudo docker pull samiksha1195/backend:latest &&
+                         sudo docker rm -f frontend backend || true'
                     '''
                 }
-            }
-        }
 
-        stage('Docker Hub Login') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-cred',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                sshagent(credentials: ['app-ssh-key']) {
                     sh '''
-                        echo "$DOCKER_PASS" | docker login \
-                          -u "$DOCKER_USER" --password-stdin
+                      ssh ec2-user@$APP_HOST \
+                        'sudo docker run -d --restart unless-stopped \
+                         --name frontend -p 80:80 \
+                         samiksha1195/frontend:latest'
+
+                      ssh ec2-user@$APP_HOST \
+                        'sudo docker run -d --restart unless-stopped \
+                         --name backend -p 8081:80 \
+                         samiksha1195/backend:latest'
                     '''
                 }
-            }
-        }
-
-        stage('Push Images to Docker Hub') {
-            steps {
-                sh '''
-                    docker push $FRONTEND_IMAGE:$IMAGE_TAG
-                    docker push $BACKEND_IMAGE:$IMAGE_TAG
-                '''
-            }
-        }
-
-        stage('Deploy Containers') {
-            steps {
-                sh '''
-                    docker rm -f backend-container || true
-                    docker rm -f frontend-container || true
-
-                    docker run -d \
-                      --name backend-container \
-                      --restart unless-stopped \
-                      -p 80:80 \
-                      $BACKEND_IMAGE:$IMAGE_TAG
-
-                    docker run -d \
-                      --name frontend-container \
-                      --restart unless-stopped \
-                      -p 8081:80 \
-                      $FRONTEND_IMAGE:$IMAGE_TAG
-                '''
-            }
-        }
-
-        stage('Verify Containers') {
-            steps {
-                sh '''
-                    docker ps
-                    docker logs --tail=50 backend-container
-                    docker logs --tail=50 frontend-container
-                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Frontend and backend images built, pushed, and deployed successfully.'
+            echo 'Blogging platform deployment succeeded.'
         }
-
         failure {
-            echo 'Pipeline failed. Check the Jenkins console output.'
-        }
-
-        always {
-            sh 'docker logout || true'
+            echo 'Deployment failed. Review the console output.'
         }
     }
 }
