@@ -70,13 +70,13 @@ pipeline {
                     docker run -d \
                       --name backend-container \
                       --restart unless-stopped \
-                      -p 5000:5000 \
+                      -p 80:80 \
                       $BACKEND_IMAGE:$IMAGE_TAG
 
                     docker run -d \
                       --name frontend-container \
                       --restart unless-stopped \
-                      -p 8085:80 \
+                      -p 8081:80 \
                       $FRONTEND_IMAGE:$IMAGE_TAG
                 '''
             }
