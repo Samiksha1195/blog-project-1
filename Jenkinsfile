@@ -53,7 +53,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sshagent(credentials: ['app-ssh-key']) {
+                sshagent(credentials: ['77e07fe4-5e2e-49f0-8afb-a90407a9ae2b']) {
                     sh '''
                       ssh -o StrictHostKeyChecking=accept-new \
                         ec2-user@$APP_HOST \
@@ -63,7 +63,7 @@ pipeline {
                     '''
                 }
 
-                sshagent(credentials: ['app-ssh-key']) {
+                sshagent(credentials: ['77e07fe4-5e2e-49f0-8afb-a90407a9ae2b']) {
                     sh '''
                       ssh ec2-user@$APP_HOST \
                         'sudo docker run -d --restart unless-stopped \
